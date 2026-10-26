@@ -1,10 +1,13 @@
 
 from pathlib import Path
+from scipy.stats import chi2, norm
 
 import matplotlib.pyplot as plt
 import numpy as np
 import yfinance as yf
-from scipy.stats import norm  # NEW
+from scipy.stats import norm  
+import pandas as pd
+
 
 FIG = Path(__file__).resolve().parents[1] / "figures"
 
@@ -76,3 +79,45 @@ ax.legend()
 fig.tight_layout()
 fig.savefig(FIG / "var_histogram.png", dpi=150)
 print("Figure saved to", FIG / "var_histogram.png")
+
+
+WINDOW = 250
+rolling = portfolio.rolling(WINDOW)
+backtest = pd.DataFrame({
+    "return": portfolio,
+    "var_hist": -rolling.quantile(1 - ALPHA).shift(1),
+    "var_norm": -(rolling.mean() + z * rolling.std()).shift(1),
+}).dropna()
+
+def kupiec_test(n_exceptions, n_days, p):
+    """Kupiec proportion-of-failures test. Returns (LR statistic, p-value)."""
+    x, T = n_exceptions, n_days
+    p_hat = x / T
+    log_l0 = (T - x) * np.log(1 - p) + x * np.log(p)
+    log_l1 = (T - x) * np.log(1 - p_hat) + x * np.log(p_hat)
+    lr = -2 * (log_l0 - log_l1)
+    return lr, 1 - chi2.cdf(lr, df=1)
+
+
+n_days = len(backtest)
+print(f"\nBacktest over {n_days} days, expected exceptions: {(1 - ALPHA) * n_days:.0f}")
+for name in ["var_hist", "var_norm"]:
+    exceptions = backtest["return"] < -backtest[name]
+    n_exc = exceptions.sum()
+    lr, p_value = kupiec_test(n_exc, n_days, 1 - ALPHA)
+    verdict = "rejected" if p_value < 0.05 else "not rejected"
+    print(f"{name}: {n_exc} exceptions ({n_exc / n_days:.2%}), "
+          f"Kupiec LR = {lr:.2f}, p-value = {p_value:.3f} -> model {verdict}")
+
+exc = backtest["return"] < -backtest["var_hist"]
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(backtest.index, backtest["return"], lw=0.5, color="grey", label="Daily return")
+ax.plot(backtest.index, -backtest["var_hist"], color="red", label="Historical VaR (rolling 1y)")
+ax.plot(backtest.index, -backtest["var_norm"], color="orange", label="Normal VaR (rolling 1y)")
+ax.scatter(backtest.index[exc], backtest["return"][exc], color="red", s=12, zorder=3,
+           label="Exceptions")
+ax.set(ylabel="Daily return", title="Backtest of 1-day 99% VaR")
+ax.legend(loc="lower left")
+fig.tight_layout()
+fig.savefig(FIG / "var_backtest.png", dpi=150)
+print("Figure saved to", FIG / "var_backtest.png")
