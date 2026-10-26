@@ -1,6 +1,6 @@
 # Option Pricing & Portfolio Risk
 
-Pricing European options with Black–Scholes and Monte Carlo, and (coming next) measuring portfolio risk with Value-at-Risk and Expected Shortfall. Made with help of Claude AI from financial side.
+Pricing European options with Black–Scholes and Monte Carlo, and (coming next) measuring portfolio risk with Value-at-Risk and Expected Shortfall. Made with help of Claude AI from financial side and writing the documentation (I know you get it).
 ## Part 1 — Option pricing (done)
 
 - Analytic **Black–Scholes** prices and Greeks (delta, gamma, vega, theta, rho).
