@@ -54,8 +54,9 @@ Equal-weight portfolio of AAPL, MSFT, JPM, XOM and JNJ, daily prices 2015–2025
 pip install -r requirements.txt
 python scripts/01_pricing.py   # prints results, saves figures to figures/
 pytest                         # checks against textbook values and put-call parity
-```
 python scripts/02_risk.py      # VaR, ES and backtest; saves figures
+```
+
 
 ## Structure
 
